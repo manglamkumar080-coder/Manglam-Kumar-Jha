@@ -435,6 +435,31 @@ fun TeacherWorkspaceView(viewModel: SchoolViewModel, homeworkList: List<Homework
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+            Button(
+                onClick = { viewModel.navigateTo(Screen.ExamPapers) },
+                colors = ButtonDefaults.buttonColors(containerColor = BrandColors.RoyalIndigo),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp)
+                    .testTag("teacher_dashboard_exam_maker_button"),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AutoAwesome,
+                        contentDescription = null,
+                        tint = BrandColors.GoldAccent,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text("Launch AI Exam Paper Builder ➔", fontWeight = FontWeight.Bold, color = Color.White)
+                }
+            }
+
+            HorizontalDivider(color = BrandColors.BorderSlate, modifier = Modifier.padding(bottom = 12.dp))
+
             Text(
                 "Upload Academic Assignment / Homework",
                 fontWeight = FontWeight.Bold,

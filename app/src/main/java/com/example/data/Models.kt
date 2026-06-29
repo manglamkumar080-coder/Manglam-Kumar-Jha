@@ -178,3 +178,32 @@ data class AttendanceRecord(
     val isPresent: Boolean
 )
 
+enum class QuestionType {
+    MCQ,
+    SHORT,
+    LONG
+}
+
+data class ExamQuestion(
+    val id: String = java.util.UUID.randomUUID().toString(),
+    val questionText: String,
+    val marks: Int,
+    val type: QuestionType,
+    val mcqOptions: List<String> = emptyList(),
+    val correctAnswer: String = ""
+)
+
+data class ExamQuestionPaper(
+    val id: String = java.util.UUID.randomUUID().toString(),
+    val title: String,
+    val subject: String,
+    val className: String,
+    val totalMarks: Int,
+    val durationMinutes: Int,
+    val instructions: String,
+    val questions: List<ExamQuestion> = emptyList(),
+    val createdByTeacherName: String,
+    val createdDate: String
+)
+
+

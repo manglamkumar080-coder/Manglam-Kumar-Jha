@@ -42,6 +42,9 @@ object SchoolDatabase {
     private val _attendance = MutableStateFlow<List<AttendanceRecord>>(emptyList())
     val attendance: StateFlow<List<AttendanceRecord>> = _attendance.asStateFlow()
 
+    private val _examPapers = MutableStateFlow<List<ExamQuestionPaper>>(emptyList())
+    val examPapers: StateFlow<List<ExamQuestionPaper>> = _examPapers.asStateFlow()
+
     init {
         loadMockData()
     }
@@ -246,6 +249,73 @@ object SchoolDatabase {
             mockAttendance.add(AttendanceRecord(studentId = s.id, date = "2026-06-29", isPresent = true))
         }
         _attendance.value = mockAttendance
+
+        // 11. Initial Exam Question Papers
+        _examPapers.value = listOf(
+            ExamQuestionPaper(
+                id = "p1",
+                title = "Grade 10 Mid-Term Mathematics Exam",
+                subject = "Mathematics",
+                className = "Grade 10-A",
+                totalMarks = 80,
+                durationMinutes = 120,
+                instructions = "Attempt all questions. Calculators are strictly prohibited. Show all working steps.",
+                createdByTeacherName = "Mrs. Shalini Roy",
+                createdDate = "2026-06-28",
+                questions = listOf(
+                    ExamQuestion(
+                        id = "q1_1",
+                        questionText = "Solve the quadratic equation: x^2 - 5x + 6 = 0.",
+                        marks = 5,
+                        type = QuestionType.SHORT,
+                        correctAnswer = "x = 2 or x = 3"
+                    ),
+                    ExamQuestion(
+                        id = "q1_2",
+                        questionText = "Which of the following is a prime number?",
+                        marks = 2,
+                        type = QuestionType.MCQ,
+                        mcqOptions = listOf("4", "9", "15", "17"),
+                        correctAnswer = "17"
+                    ),
+                    ExamQuestion(
+                        id = "q1_3",
+                        questionText = "State and prove Pythagoras' Theorem.",
+                        marks = 10,
+                        type = QuestionType.LONG,
+                        correctAnswer = "Detailed step-by-step geometric proof."
+                    )
+                )
+            ),
+            ExamQuestionPaper(
+                id = "p2",
+                title = "Grade 11 Physics Unit Test - Mechanics",
+                subject = "Physics",
+                className = "Grade 11-Science",
+                totalMarks = 40,
+                durationMinutes = 60,
+                instructions = "Attempt all questions. Use g = 9.8 m/s^2 where necessary. Non-programmable calculators are allowed.",
+                createdByTeacherName = "Mr. Amit Verma",
+                createdDate = "2026-06-29",
+                questions = listOf(
+                    ExamQuestion(
+                        id = "q2_1",
+                        questionText = "A ball is thrown vertically upwards with a velocity of 20 m/s. Find the maximum height reached.",
+                        marks = 6,
+                        type = QuestionType.SHORT,
+                        correctAnswer = "20.4 meters"
+                    ),
+                    ExamQuestion(
+                        id = "q2_2",
+                        questionText = "What is the SI unit of force?",
+                        marks = 2,
+                        type = QuestionType.MCQ,
+                        mcqOptions = listOf("Joule", "Watt", "Newton", "Pascal"),
+                        correctAnswer = "Newton"
+                    )
+                )
+            )
+        )
     }
 
     // --- Student & Teacher Operations ---
@@ -305,6 +375,15 @@ object SchoolDatabase {
     fun addTeacher(name: String, employeeId: String, department: String, contact: String, email: String) {
         val teacher = Teacher(name = name, employeeId = employeeId, department = department, contact = contact, email = email)
         _teachers.value = _teachers.value + teacher
+    }
+
+    // --- Exam Question Paper Operations ---
+    fun addExamQuestionPaper(paper: ExamQuestionPaper) {
+        _examPapers.value = _examPapers.value + paper
+    }
+
+    fun deleteExamQuestionPaper(paperId: String) {
+        _examPapers.value = _examPapers.value.filterNot { it.id == paperId }
     }
 
     // --- Fee Structures Operations ---

@@ -95,6 +95,61 @@ object GeminiHelper {
     private fun getMockResponse(prompt: String, systemInstruction: String?): String {
         val query = prompt.lowercase()
         return when {
+            query.contains("question paper") || query.contains("exam") || query.contains("question") || query.contains("test") -> {
+                """
+                # EDUTRUST INTERNATIONAL SCHOOL
+                ## DRAFT QUESTION PAPER GENERATOR (GEMINI 3.5 FLASH)
+                **Subject:** Science & Technology | **Class:** Grade 10-A
+                **Duration:** 2 Hours | **Total Marks:** 50
+                
+                ### GENERAL INSTRUCTIONS:
+                1. All questions are compulsory.
+                2. Section A has 5 Multiple Choice Questions (2 marks each).
+                3. Section B has 4 Short Answer Questions (5 marks each).
+                4. Section C has 2 Long Answer Questions (10 marks each).
+                
+                ---
+                
+                ### SECTION A: OBJECTIVE MULTIPLE CHOICE (10 MARKS)
+                
+                **Q1.** Which gas is produced when dilute hydrochloric acid reacts with active zinc metals? (2 Marks)
+                - A) Oxygen Gas
+                - B) Hydrogen Gas
+                - C) Carbon Dioxide
+                - D) Nitrogen Gas
+                *Correct Answer: B*
+                
+                **Q2.** The focal length of a concave mirror having a radius of curvature equal to 40 cm is: (2 Marks)
+                - A) 10 cm
+                - B) 20 cm
+                - C) 30 cm
+                - D) 40 cm
+                *Correct Answer: B*
+                
+                **Q3.** Which element has the electronic configuration of 2, 8, 8, 2? (2 Marks)
+                - A) Calcium
+                - B) Magnesium
+                - C) Sodium
+                - D) Potassium
+                *Correct Answer: A*
+                
+                ---
+                
+                ### SECTION B: SHORT QUESTIONS (20 MARKS)
+                
+                **Q4.** Define the term "Electronegativity" and explain how it varies across a period and down a group in the Modern Periodic Table. (5 Marks)
+                
+                **Q5.** Write the balanced chemical equations for: (5 Marks)
+                a) Photosynthesis process
+                b) Rusting of Iron
+                
+                ---
+                
+                ### SECTION C: DETAILED ANALYTICAL QUESTIONS (20 MARKS)
+                
+                **Q6.** Explain the structure and functioning of a human nephron with a neat labeled flow chart. Describe how selective reabsorption takes place. (10 Marks)
+                """.trimIndent()
+            }
             query.contains("attendance") -> {
                 "The attendance prediction model forecasts **92% attendance stability** over the current semester for selected cohorts, with an 8% variance based on academic exam schedules."
             }

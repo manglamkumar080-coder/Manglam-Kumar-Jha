@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.UserRole
 import com.example.ui.Screen
 import com.example.ui.SchoolViewModel
 import com.example.ui.components.BrandColors
@@ -45,6 +46,7 @@ class MainActivity : ComponentActivity() {
 fun MainAppLayout(viewModel: SchoolViewModel) {
     val currentScreen by viewModel.currentScreen.collectAsState()
     val uiMessage by viewModel.uiMessage.collectAsState()
+    val activeRole by viewModel.activeRole.collectAsState()
     val context = LocalContext.current
 
     // Trigger standard native alerts when state messages change
@@ -154,6 +156,23 @@ fun MainAppLayout(viewModel: SchoolViewModel) {
                     ),
                     modifier = Modifier.testTag("nav_item_reports")
                 )
+
+                if (activeRole == UserRole.TEACHER) {
+                    NavigationBarItem(
+                        selected = currentScreen is Screen.ExamPapers,
+                        onClick = { viewModel.navigateTo(Screen.ExamPapers) },
+                        icon = { Icon(Icons.Default.AutoAwesome, contentDescription = "Exam Maker") },
+                        label = { Text("Exam Maker", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = BrandColors.RoyalIndigo,
+                            selectedTextColor = BrandColors.SoftWhite,
+                            unselectedIconColor = BrandColors.SoftGray,
+                            unselectedTextColor = BrandColors.SoftGray,
+                            indicatorColor = BrandColors.BorderSlate
+                        ),
+                        modifier = Modifier.testTag("nav_item_exam_papers")
+                    )
+                }
             }
         },
         containerColor = BrandColors.SpaceDark
@@ -185,6 +204,7 @@ fun MainAppLayout(viewModel: SchoolViewModel) {
                         is Screen.Invoices -> InvoicesScreen(viewModel = viewModel)
                         is Screen.SchoolBank -> SchoolBankScreen(viewModel = viewModel)
                         is Screen.Reports -> ReportsScreen(viewModel = viewModel)
+                        is Screen.ExamPapers -> ExamPapersScreen(viewModel = viewModel)
                     }
                 }
             }

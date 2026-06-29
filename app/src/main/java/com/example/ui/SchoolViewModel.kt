@@ -17,6 +17,7 @@ sealed class Screen(val title: String) {
     object SchoolBank : Screen("EduTrust School Bank")
     object Reports : Screen("Financial Reports")
     object Admission : Screen("Admissions")
+    object ExamPapers : Screen("Exam Paper Maker")
 }
 
 class SchoolViewModel : ViewModel() {
@@ -40,6 +41,7 @@ class SchoolViewModel : ViewModel() {
     val fixedDeposits = SchoolDatabase.fixedDeposits
     val homework = SchoolDatabase.homework
     val attendance = SchoolDatabase.attendance
+    val examPapers = SchoolDatabase.examPapers
 
     // --- Role State ---
     private val _activeRole = MutableStateFlow(UserRole.SUPER_ADMIN)
@@ -470,5 +472,183 @@ class SchoolViewModel : ViewModel() {
 
     fun clearAdmissionAiOutput() {
         _admissionAiOutput.value = ""
+    }
+
+    // --- Exam Question Paper Maker Flow States ---
+    private val _draftExamTitle = MutableStateFlow("")
+    val draftExamTitle: StateFlow<String> = _draftExamTitle.asStateFlow()
+
+    private val _draftExamSubject = MutableStateFlow("")
+    val draftExamSubject: StateFlow<String> = _draftExamSubject.asStateFlow()
+
+    private val _draftExamClass = MutableStateFlow("Grade 10-A")
+    val draftExamClass: StateFlow<String> = _draftExamClass.asStateFlow()
+
+    private val _draftExamTotalMarks = MutableStateFlow(50)
+    val draftExamTotalMarks: StateFlow<Int> = _draftExamTotalMarks.asStateFlow()
+
+    private val _draftExamDuration = MutableStateFlow(120)
+    val draftExamDuration: StateFlow<Int> = _draftExamDuration.asStateFlow()
+
+    private val _draftExamInstructions = MutableStateFlow("Answer all questions. Show working steps clearly.")
+    val draftExamInstructions: StateFlow<String> = _draftExamInstructions.asStateFlow()
+
+    private val _draftQuestions = MutableStateFlow<List<ExamQuestion>>(emptyList())
+    val draftQuestions: StateFlow<List<ExamQuestion>> = _draftQuestions.asStateFlow()
+
+    private val _examAiLoading = MutableStateFlow(false)
+    val examAiLoading: StateFlow<Boolean> = _examAiLoading.asStateFlow()
+
+    private val _aiDraftedText = MutableStateFlow("")
+    val aiDraftedText: StateFlow<String> = _aiDraftedText.asStateFlow()
+
+    fun updateDraftInfo(title: String, subject: String, className: String, totalMarks: Int, duration: Int, instructions: String) {
+        _draftExamTitle.value = title
+        _draftExamSubject.value = subject
+        _draftExamClass.value = className
+        _draftExamTotalMarks.value = totalMarks
+        _draftExamDuration.value = duration
+        _draftExamInstructions.value = instructions
+    }
+
+    fun addDraftQuestion(questionText: String, marks: Int, type: QuestionType, mcqOptions: List<String> = emptyList(), correctAnswer: String = "") {
+        val question = ExamQuestion(
+            questionText = questionText,
+            marks = marks,
+            type = type,
+            mcqOptions = mcqOptions,
+            correctAnswer = correctAnswer
+        )
+        _draftQuestions.value = _draftQuestions.value + question
+    }
+
+    fun removeDraftQuestion(questionId: String) {
+        _draftQuestions.value = _draftQuestions.value.filterNot { it.id == questionId }
+    }
+
+    fun clearDraft() {
+        _draftExamTitle.value = ""
+        _draftExamSubject.value = ""
+        _draftExamClass.value = "Grade 10-A"
+        _draftExamTotalMarks.value = 50
+        _draftExamDuration.value = 120
+        _draftExamInstructions.value = "Answer all questions. Show working steps clearly."
+        _draftQuestions.value = emptyList()
+        _aiDraftedText.value = ""
+    }
+
+    fun saveDraftAsExamPaper() {
+        val title = _draftExamTitle.value.trim()
+        val subject = _draftExamSubject.value.trim()
+        if (title.isEmpty() || subject.isEmpty()) {
+            showMessage("Please specify Exam Title and Subject")
+            return
+        }
+        val paper = ExamQuestionPaper(
+            title = title,
+            subject = subject,
+            className = _draftExamClass.value,
+            totalMarks = _draftExamTotalMarks.value,
+            durationMinutes = _draftExamDuration.value,
+            instructions = _draftExamInstructions.value,
+            questions = _draftQuestions.value,
+            createdByTeacherName = "Mrs. Shalini Roy", // Fallback / Demo teacher
+            createdDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+        )
+        SchoolDatabase.addExamQuestionPaper(paper)
+        clearDraft()
+        showMessage("Exam Paper '$title' saved to Vault!")
+    }
+
+    fun deleteExamPaper(paperId: String) {
+        SchoolDatabase.deleteExamQuestionPaper(paperId)
+        showMessage("Exam Paper deleted successfully.")
+    }
+
+    fun generateExamQuestionsWithAi(topicPrompt: String) {
+        viewModelScope.launch {
+            _examAiLoading.value = true
+            _aiDraftedText.value = ""
+            val title = _draftExamTitle.value.ifEmpty { "Exam Test" }
+            val subject = _draftExamSubject.value.ifEmpty { "Science" }
+            val className = _draftExamClass.value
+            val systemIns = "You are an expert curriculum designer and educator. Draft a comprehensive exam question paper with exact sections and clear marks allocation. Include multiple choice questions with options and answers, short questions, and long essay questions."
+            val prompt = "Draft an exam question paper for class '$className', subject '$subject', focusing on topic or chapter: '$topicPrompt'. The paper should be approximately ${_draftExamTotalMarks.value} marks, with ${_draftExamDuration.value} minutes duration."
+            val reply = GeminiHelper.generateContent(prompt, systemIns)
+            _aiDraftedText.value = reply
+            
+            // Auto-populate questions into draft
+            val parsedQuestions = parseQuestionsFromMarkdown(reply)
+            if (parsedQuestions.isNotEmpty()) {
+                _draftQuestions.value = _draftQuestions.value + parsedQuestions
+            }
+            
+            _examAiLoading.value = false
+            showMessage("AI Questions generated and auto-populated into draft!")
+        }
+    }
+
+    private fun parseQuestionsFromMarkdown(text: String): List<ExamQuestion> {
+        val list = mutableListOf<ExamQuestion>()
+        try {
+            val lines = text.split("\n")
+            var currentQuestionText = ""
+            var currentOptions = mutableListOf<String>()
+            var currentType = QuestionType.SHORT
+            var currentMarks = 5
+            
+            for (line in lines) {
+                val trimmed = line.trim()
+                if (trimmed.startsWith("**Q") || trimmed.startsWith("Q") || trimmed.startsWith("Question")) {
+                    // Save previous question
+                    if (currentQuestionText.isNotEmpty()) {
+                        list.add(ExamQuestion(
+                            questionText = currentQuestionText,
+                            marks = currentMarks,
+                            type = currentType,
+                            mcqOptions = if (currentType == QuestionType.MCQ) currentOptions.toList() else emptyList()
+                        ))
+                        currentOptions = mutableListOf()
+                    }
+                    
+                    // Parse new question text
+                    currentQuestionText = trimmed.replace(Regex("^\\*\\*Q\\d+\\.\\*\\*|^Q\\d+\\.|^Question\\s+\\d+:"), "").trim()
+                    
+                    // Extract marks if present
+                    if (currentQuestionText.contains("marks", ignoreCase = true)) {
+                        val match = Regex("(?i)\\((\\d+)\\s*marks?\\)").find(currentQuestionText)
+                        currentMarks = match?.groupValues?.get(1)?.toIntOrNull() ?: 5
+                    } else {
+                        currentMarks = 5
+                    }
+                    
+                    currentType = when {
+                        currentQuestionText.contains("multiple choice", ignoreCase = true) || currentQuestionText.contains("choose", ignoreCase = true) -> QuestionType.MCQ
+                        currentMarks >= 10 -> QuestionType.LONG
+                        else -> QuestionType.SHORT
+                    }
+                } else if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
+                    val opt = trimmed.substring(2).trim()
+                    if (opt.startsWith("A)") || opt.startsWith("B)") || opt.startsWith("C)") || opt.startsWith("D)") ||
+                        opt.startsWith("a)") || opt.startsWith("b)") || opt.startsWith("c)") || opt.startsWith("d)")) {
+                        currentType = QuestionType.MCQ
+                        currentOptions.add(opt)
+                    }
+                }
+            }
+            
+            // Add last question
+            if (currentQuestionText.isNotEmpty()) {
+                list.add(ExamQuestion(
+                    questionText = currentQuestionText,
+                    marks = currentMarks,
+                    type = currentType,
+                    mcqOptions = if (currentType == QuestionType.MCQ) currentOptions.toList() else emptyList()
+                ))
+            }
+        } catch (e: Exception) {
+            // Fail silently
+        }
+        return list
     }
 }
