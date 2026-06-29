@@ -1,0 +1,6 @@
+{
+  "name": "School Manager",
+  "description": "A comprehensive School Management application with statistics, student and teacher directories, attendance logs, and academic grade tracker.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
